@@ -93,5 +93,14 @@ class UrlStore {
   }
 }
 
-// Singleton instance
-export const urlStore = new UrlStore()
+// Global store instance to ensure persistence across API calls
+declare global {
+  var __urlStore: UrlStore | undefined
+}
+
+export const urlStore = (() => {
+  if (!global.__urlStore) {
+    global.__urlStore = new UrlStore()
+  }
+  return global.__urlStore
+})()
