@@ -19,6 +19,9 @@ import {
   AlertCircleIcon,
   TrashIcon,
   RefreshCwIcon,
+  QrCodeIcon,
+  CopyIcon,
+  CheckIcon,
 } from "lucide-react"
 
 interface UrlStats {
@@ -56,20 +59,31 @@ export function Analytics() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+  const [qrCodes, setQrCodes] = useState<Record<string, string>>({})
+  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({})
 
   // Load overview stats on component mount
   useEffect(() => {
     loadOverviewStats()
   }, [])
 
+  // Also load stats when component becomes visible (in case it's in an inactive tab)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!overviewStats) {
+        loadOverviewStats()
+      }
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [overviewStats])
+
   const loadOverviewStats = async () => {
     try {
-      console.log("[v0] Loading overview stats...")
       const response = await fetch("/api/stats")
       const data = await response.json()
 
       if (response.ok) {
-        console.log("[v0] Overview stats loaded:", data)
         setOverviewStats(data)
         setAllUrls(data.recentUrls || [])
       } else {
@@ -106,6 +120,23 @@ export function Analytics() {
     }
   }
 
+  const generateQRCode = (shortCode: string, shortUrl: string) => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shortUrl)}`
+    setQrCodes(prev => ({ ...prev, [shortCode]: qrUrl }))
+  }
+
+  const copyToClipboard = async (text: string, shortCode: string, type: string = 'url') => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedStates(prev => ({ ...prev, [`${shortCode}-${type}`]: true }))
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [`${shortCode}-${type}`]: false }))
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
   const deleteUrl = async (shortCode: string) => {
     if (!confirm(`Are you sure you want to delete the short URL /${shortCode}?`)) {
       return
@@ -136,10 +167,11 @@ export function Analytics() {
     }
   }
 
+  
   return (
     <div className="space-y-6">
       {/* Overview Stats */}
-      {overviewStats && (
+      {overviewStats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -191,14 +223,26 @@ export function Analytics() {
             </CardContent>
           </Card>
         </div>
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Loading analytics data...</p>
+        </div>
       )}
 
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">URL Management</h2>
-        <Button onClick={loadOverviewStats} variant="outline" size="sm">
-          <RefreshCwIcon className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={loadOverviewStats} variant="outline" size="sm">
+            <RefreshCwIcon className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={() => {
+            setOverviewStats(null)
+            loadOverviewStats()
+          }} variant="outline" size="sm">
+            Force Reload
+          </Button>
+        </div>
       </div>
 
       {/* Search for Specific URL Stats */}
@@ -301,48 +345,158 @@ export function Analytics() {
           <CardHeader>
             <CardTitle>All Short URLs</CardTitle>
             <CardDescription>
-              Complete list of all your short links with analytics and management options
+              Complete list of all your short links with analytics, QR codes, and management options
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {allUrls.map((url) => (
-                <div key={url.shortCode} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <code className="text-sm font-mono">/{url.shortCode}</code>
-                      {url.isCustomCode && (
-                        <Badge variant="secondary" className="text-xs">
-                          Custom
-                        </Badge>
-                      )}
+            <div className="space-y-6">
+              {allUrls.map((url) => {
+                const shortUrl = `${window.location.origin}/${url.shortCode}`
+                const hasQRCode = qrCodes[url.shortCode]
+                const isOriginalCopied = copiedStates[`${url.shortCode}-original`]
+                const isShortCopied = copiedStates[`${url.shortCode}-short`]
+                const isQRCopied = copiedStates[`${url.shortCode}-qr`]
+                
+                return (
+                  <div key={url.shortCode} className="border rounded-lg p-4 space-y-4">
+                    {/* Header with short code and badges */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <code className="text-lg font-mono font-semibold">/{url.shortCode}</code>
+                        {url.isCustomCode && (
+                          <Badge variant="secondary" className="text-xs">
+                            Custom
+                          </Badge>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => deleteUrl(url.shortCode)}
+                        variant="outline"
+                        size="sm"
+                        disabled={deleteLoading === url.shortCode}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{url.originalUrl}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Created {new Date(url.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{url.clicks} clicks</p>
-                      {url.lastAccessed && (
-                        <p className="text-xs text-muted-foreground">
-                          Last: {new Date(url.lastAccessed).toLocaleDateString()}
-                        </p>
-                      )}
+
+                    {/* Original URL */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Original URL</Label>
+                      <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                        <code className="flex-1 text-sm font-mono break-all">{url.originalUrl}</code>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(url.originalUrl, url.shortCode, 'original')}
+                          className="shrink-0"
+                        >
+                          {isOriginalCopied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                          className="shrink-0"
+                        >
+                          <a href={url.originalUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLinkIcon className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      onClick={() => deleteUrl(url.shortCode)}
-                      variant="outline"
-                      size="sm"
-                      disabled={deleteLoading === url.shortCode}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </Button>
+
+                    {/* Short URL with redirect button */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Short URL</Label>
+                      <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                        <code className="flex-1 text-sm font-mono">{shortUrl}</code>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(shortUrl, url.shortCode, 'short')}
+                          className="shrink-0"
+                        >
+                          {isShortCopied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          asChild
+                          className="shrink-0"
+                        >
+                          <a href={shortUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLinkIcon className="h-4 w-4 mr-1" />
+                            Visit
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Analytics and QR Code Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Analytics */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-muted-foreground">Analytics</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="text-center p-3 bg-muted rounded-md">
+                            <p className="text-2xl font-bold text-accent">{url.clicks}</p>
+                            <p className="text-xs text-muted-foreground">Total Clicks</p>
+                          </div>
+                          <div className="text-center p-3 bg-muted rounded-md">
+                            <p className="text-sm font-medium">
+                              {new Date(url.createdAt).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Created</p>
+                          </div>
+                        </div>
+                        {url.lastAccessed && (
+                          <div className="text-center p-3 bg-muted rounded-md">
+                            <p className="text-sm font-medium">
+                              {new Date(url.lastAccessed).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Last Accessed</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-muted-foreground">QR Code</Label>
+                        {!hasQRCode ? (
+                          <Button
+                            onClick={() => generateQRCode(url.shortCode, shortUrl)}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            <QrCodeIcon className="h-4 w-4 mr-2" />
+                            Generate QR Code
+                          </Button>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex justify-center">
+                              <img 
+                                src={hasQRCode} 
+                                alt={`QR Code for ${url.shortCode}`} 
+                                className="border rounded-lg w-24 h-24"
+                              />
+                            </div>
+                            <Button
+                              onClick={() => copyToClipboard(hasQRCode, url.shortCode, 'qr')}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              {isQRCopied ? <CheckIcon className="h-4 w-4 mr-2" /> : <CopyIcon className="h-4 w-4 mr-2" />}
+                              {isQRCopied ? 'Copied!' : 'Copy QR Image URL'}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
