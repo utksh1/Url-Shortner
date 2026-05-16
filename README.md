@@ -1,116 +1,70 @@
+# URL Shortener
 
-🚀 Project Name
+A professional Next.js URL shortener with a Node.js API layer, persistent local storage, custom aliases, expiry support, click tracking, QR codes, and an analytics dashboard.
 
-# Url-Shortner
+## Features
 
-💡 Project Idea
+- Create short links from HTTP or HTTPS URLs
+- Optional custom short codes with reserved-route protection
+- Optional link expiry in hours
+- Redirect tracking with click counts and last-accessed timestamps
+- Analytics dashboard for recent links
+- Delete links from the dashboard
+- Local JSON persistence in `.data/urls.json`
 
-A web app that lets users convert long URLs into short, branded ones using their own custom domain or custom alias.
-Example:
+## Tech Stack
 
-Original: https://www.linkedin.com/in/utkarsh-singh-dev-projects-long-link
-Shortened: https://utkarsh.link/profile
+- Next.js App Router
+- React
+- Node.js runtime for API routes
+- Tailwind CSS and shadcn/ui components
 
-⚙️ Key Features
+## Getting Started
 
-Shorten URLs
+```bash
+npm install
+npm run dev
+```
 
-Input: Long URL
+Open `http://localhost:3000`.
 
-Optional custom alias: /myproject
+## Scripts
 
-Output: Short link (https://yourdomain.com/myproject)
+```bash
+npm run dev
+npm run build
+npm run start
+```
 
-Custom Domain Integration
+## API
 
-Users can connect their own domain (like go.utkarsh.link).
+Create a short link:
 
-Link Management Dashboard
-
-Users can view, edit, and delete their short links.
-
-Analytics
-
-Count clicks per link.
-
-Show date/time and country of visitors.
-
-Optional Expiration
-
-Auto-disable links after certain dates or click limits.
-
-API Access
-
-Provide an API endpoint for shortening via code.
-
-QR Code Generation
-
-Each link can generate a QR code.
-
-🧩 Tech Stack
-Layer	Technology	Description
-Frontend	TypeScript + Vanilla JS + CSS	Dynamic UI, simple dashboard
-Backend	Node.js + Express (TypeScript)	Handle URL shortening, redirects, API
-Database	MongoDB or SQLite	Store links, domains, analytics
-Hosting	Vercel or Render	Deploy frontend + backend easily
-DNS/Domain	Cloudflare / Freenom	Connect custom domains/subdomains
-🗂️ Folder Structure
-shortlinker/
-│
-├── backend/
-│   ├── src/
-│   │   ├── index.ts        // Express server entry
-│   │   ├── routes/
-│   │   │   ├── shorten.ts  // POST /shorten
-│   │   │   ├── redirect.ts // GET /:alias
-│   │   ├── db.ts           // Database setup
-│   │   ├── models/
-│   │   │   └── Link.ts     // Link schema/interface
-│   └── package.json
-│
-├── frontend/
-│   ├── index.html
-│   ├── styles.css
-│   ├── main.ts
-│   ├── dashboard.ts
-│
-└── README.md
-
-🧠 Basic Flow
-
-User submits a URL
-
-JS/TS sends it to /api/shorten
-
-Server generates a unique code (or uses custom alias)
-
-Server stores it in DB along with domain and metadata
-
-When someone visits that short link, Express automatically redirects them to the original URL
-
-Analytics updated in real-time
-
-🧪 Example API
+```http
 POST /api/shorten
-{
-  "originalUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  "alias": "music",
-  "domain": "utkarsh.link"
-}
-
-
-Response:
+Content-Type: application/json
 
 {
-  "shortUrl": "https://utkarsh.link/music"
+  "url": "https://example.com/very/long/path",
+  "customCode": "launch",
+  "expiryHours": 24
 }
+```
 
-🌈 Nice Add-ons
+Get overview analytics:
 
-A small analytics dashboard showing graphs using Chart.js
+```http
+GET /api/stats
+```
 
-LocalStorage caching for user’s last few links
+Get one link's analytics:
 
-Custom themes (CSS) – dark/light
+```http
+GET /api/stats/launch
+```
 
-Click tracking endpoint with middleware
+Delete a link:
+
+```http
+DELETE /api/delete/launch
+```
