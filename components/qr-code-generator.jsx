@@ -5,18 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { QrCodeIcon, DownloadIcon } from "lucide-react"
 
-interface QRCodeGeneratorProps {
-  shortUrl: string
-}
-
-export function QRCodeGenerator({ shortUrl }: QRCodeGeneratorProps) {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
+export function QRCodeGenerator({ shortUrl }) {
+  const [qrCodeUrl, setQrCodeUrl] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
 
   const generateQRCode = async () => {
     setIsGenerating(true)
     try {
-      // Using QR Server API for QR code generation
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shortUrl)}`
       setQrCodeUrl(qrUrl)
     } catch (error) {
@@ -54,7 +49,7 @@ export function QRCodeGenerator({ shortUrl }: QRCodeGeneratorProps) {
         ) : (
           <div className="space-y-4">
             <div className="flex justify-center">
-              <img src={qrCodeUrl || "/placeholder.svg"} alt="QR Code" className="border rounded-lg" />
+              <img src={qrCodeUrl} alt="QR Code" className="border rounded-lg" />
             </div>
             <Button onClick={downloadQRCode} variant="outline" className="w-full bg-transparent">
               <DownloadIcon className="h-4 w-4 mr-2" />
