@@ -144,7 +144,9 @@ The app stores URL records in:
 .data/urls.json
 ```
 
-That file is ignored by Git. This is good for local/demo usage. For production, replace `lib/url-shortener/repository.js` with a database-backed repository such as PostgreSQL, SQLite, MongoDB, or Vercel KV.
+That file is ignored by Git. On Vercel, the app uses `/tmp/url-shortener/urls.json` when file storage is available and falls back to in-memory storage if persistence is blocked.
+
+This is good for local/demo usage. For real production links, replace `lib/url-shortener/repository.js` with a database-backed repository such as PostgreSQL, SQLite, MongoDB, or Vercel KV. Serverless file storage is temporary and can be reset between cold starts or deployments.
 
 ## Validation Rules
 
@@ -159,6 +161,7 @@ That file is ignored by Git. This is good for local/demo usage. For production, 
 - The project uses `npm` and `package-lock.json`.
 - `.next`, `.data`, environment files, logs, and `node_modules` are ignored.
 - Vercel Analytics and Speed Insights are enabled in `app/layout.jsx`.
+- Serverless deployments should use a real database for durable links.
 - Cookiebot may show a localhost authorization warning during local development unless localhost is added in the Cookiebot dashboard.
 
 ## Git History Note
