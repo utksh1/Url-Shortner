@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { QrCodeIcon, DownloadIcon } from "lucide-react"
+import { QrCodeIcon, DownloadIcon } from "@/components/hugeicons"
 
 export function QRCodeGenerator({ shortUrl }) {
   const [qrCodeUrl, setQrCodeUrl] = useState("")
