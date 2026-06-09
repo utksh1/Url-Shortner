@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UrlShortener } from "@/components/url-shortener"
 import { Analytics } from "@/components/analytics"
-import { LinkIcon, BarChart3Icon, ClockIcon, MousePointerClickIcon } from "lucide-react"
+import { LinkIcon, BarChart3Icon, ClockIcon, MousePointerClickIcon } from "@/components/hugeicons"
 
 export default function HomePage() {
   return (

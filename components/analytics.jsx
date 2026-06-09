@@ -21,7 +21,7 @@ import {
   QrCodeIcon,
   CopyIcon,
   CheckIcon,
-} from "lucide-react"
+} from "@/components/hugeicons"
 
 export function Analytics() {
   const [searchCode, setSearchCode] = useState("")

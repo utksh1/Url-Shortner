@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { CopyIcon, CheckIcon, ExternalLinkIcon, AlertCircleIcon } from "lucide-react"
+import { CopyIcon, CheckIcon, ExternalLinkIcon, AlertCircleIcon } from "@/components/hugeicons"
 
 export function UrlShortener() {
   const [url, setUrl] = useState("")
