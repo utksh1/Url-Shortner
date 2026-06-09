@@ -7,7 +7,7 @@ export const runtime = "nodejs"
 const notFoundHtml = `<!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Link Not Found</title>
+    <title>Checking Browser Link</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -47,10 +47,41 @@ const notFoundHtml = `<!DOCTYPE html>
   </head>
   <body>
     <div class="container">
-      <h1>Link Not Found</h1>
-      <p>The short link you are looking for does not exist or has expired.</p>
+      <h1 id="title">Checking Link</h1>
+      <p id="message">Looking for this short link in your browser local storage...</p>
       <a href="/">Go back to homepage</a>
     </div>
+    <script>
+      (function () {
+        var storageKey = "url-shortener-links";
+        var shortCode = decodeURIComponent(window.location.pathname.split("/").filter(Boolean)[0] || "");
+        var title = document.getElementById("title");
+        var message = document.getElementById("message");
+
+        try {
+          var records = JSON.parse(window.localStorage.getItem(storageKey) || "[]");
+          var record = Array.isArray(records) ? records.find(function (item) {
+            return item && item.shortCode === shortCode;
+          }) : null;
+
+          if (!record) {
+            throw new Error("missing");
+          }
+
+          if (record.expiresAt && new Date(record.expiresAt) <= new Date()) {
+            throw new Error("expired");
+          }
+
+          record.clicks = (Number.isFinite(record.clicks) ? record.clicks : 0) + 1;
+          record.lastAccessed = new Date().toISOString();
+          window.localStorage.setItem(storageKey, JSON.stringify(records));
+          window.location.replace(record.originalUrl);
+        } catch (error) {
+          title.textContent = "Link Not Found";
+          message.textContent = "The short link you are looking for does not exist in this browser or has expired.";
+        }
+      })();
+    </script>
   </body>
 </html>`
 
@@ -61,8 +92,11 @@ export async function GET(request, { params }) {
   } catch (error) {
     if (error instanceof NotFoundError) {
       return new NextResponse(notFoundHtml, {
-        status: 404,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
       })
     }
 
