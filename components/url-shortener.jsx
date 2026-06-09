@@ -2,6 +2,7 @@
 
 import { QRCodeGenerator } from "@/components/qr-code-generator"
 
+import { createLocalShortUrl } from "@/lib/local-url-store"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,17 +40,10 @@ export function UrlShortener() {
         payload.expiryHours = Number.parseInt(expiryHours)
       }
 
-      const response = await fetch("/api/shorten", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const data = createLocalShortUrl({
+        ...payload,
+        origin: window.location.origin,
       })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create short URL")
-      }
 
       setResult(data)
       setUrl("")
@@ -74,7 +68,7 @@ export function UrlShortener() {
       <Card>
         <CardHeader>
           <CardTitle>Create Short Link</CardTitle>
-          <CardDescription>Enter a long URL to generate a short, trackable link</CardDescription>
+          <CardDescription>Enter a long URL to generate a short link saved in this browser's local storage</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

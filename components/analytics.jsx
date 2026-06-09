@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { deleteLocalUrl, getLocalOverviewStats, getLocalUrl } from "@/lib/local-url-store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -51,21 +52,15 @@ export function Analytics() {
     return () => clearTimeout(timer)
   }, [overviewStats])
 
-  const loadOverviewStats = async () => {
+  const loadOverviewStats = () => {
     try {
-      const response = await fetch("/api/stats")
-      const data = await response.json()
-
-      if (response.ok) {
-        setOverviewStats(data)
-        setAllUrls(data.recentUrls || [])
-        setError("")
-      } else {
-        setError("Failed to load analytics data")
-      }
+      const data = getLocalOverviewStats()
+      setOverviewStats(data)
+      setAllUrls(data.recentUrls || [])
+      setError("")
     } catch (err) {
       console.error("Failed to load overview stats:", err)
-      setError("Failed to connect to analytics service")
+      setError("Failed to load browser local storage data")
     }
   }
 
@@ -78,11 +73,10 @@ export function Analytics() {
     setUrlStats(null)
 
     try {
-      const response = await fetch(`/api/stats/${encodeURIComponent(searchCode.trim())}`)
-      const data = await response.json()
+      const data = getLocalUrl(searchCode.trim())
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch stats")
+      if (!data) {
+        throw new Error("URL not found")
       }
 
       setUrlStats(data)
@@ -117,24 +111,16 @@ export function Analytics() {
 
     setDeleteLoading(shortCode)
     try {
-      const response = await fetch(`/api/delete/${shortCode}`, {
-        method: "DELETE",
-      })
+      deleteLocalUrl(shortCode)
+      loadOverviewStats()
 
-      if (response.ok) {
-        // Refresh the data after successful deletion
-        await loadOverviewStats()
-        // Clear individual stats if it was the deleted URL
-        if (urlStats?.shortCode === shortCode) {
-          setUrlStats(null)
-          setSearchCode("")
-        }
-      } else {
-        const data = await response.json()
-        setError(data.error || "Failed to delete URL")
+      // Clear individual stats if it was the deleted URL
+      if (urlStats?.shortCode === shortCode) {
+        setUrlStats(null)
+        setSearchCode("")
       }
     } catch (err) {
-      setError("Failed to delete URL")
+      setError(err instanceof Error ? err.message : "Failed to delete URL")
     } finally {
       setDeleteLoading(null)
     }
@@ -216,7 +202,7 @@ export function Analytics() {
       <Card>
         <CardHeader>
           <CardTitle>Search URL Analytics</CardTitle>
-          <CardDescription>Enter a short code to view detailed analytics for a specific URL</CardDescription>
+          <CardDescription>Enter a short code to view analytics saved in this browser's local storage</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={searchStats} className="flex gap-2">
@@ -312,7 +298,7 @@ export function Analytics() {
           <CardHeader>
             <CardTitle>All Short URLs</CardTitle>
             <CardDescription>
-              Complete list of all your short links with analytics, QR codes, and management options
+              Complete list of short links saved in this browser with analytics, QR codes, and management options
             </CardDescription>
           </CardHeader>
           <CardContent>
